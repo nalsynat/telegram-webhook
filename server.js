@@ -37,7 +37,6 @@ app.get('/', (req, res) => {
 });
 
 app.listen(10000, () => console.log("Running"));
-const axios = require("axios");
 const BOT_TOKEN = process.env.BOT_TOKEN;
 
 async function sendText(chatId, text) {
