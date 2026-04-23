@@ -7,19 +7,11 @@ app.use(express.json());
 // 👉 PUT YOUR APPS SCRIPT URL HERE
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzeO3SaLOzbS7L7cqJJf5uJ3v9X1u6KtYZOYfwW0o9Yj3zQYdmg5fYm9DnRI0EY4ZA6/exec";
 
-app.post('/', async (req, res) => {
-  // Respond to Telegram immediately
-  res.status(200).send('OK');
+app.post('/', (req, res) => {
+  console.log("🔥 NEW REQUEST FROM TELEGRAM");
+  console.log(JSON.stringify(req.body, null, 2));
 
-  try {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body)
-    });
-  } catch (err) {
-    console.log(err);
-  }
+  res.sendStatus(200);
 });
 
 app.get('/', (req, res) => {
