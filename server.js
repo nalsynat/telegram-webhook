@@ -1,5 +1,6 @@
 const express = require('express');
 const axios = require('axios');
+const userState = {};
 
 const app = express();
 app.use(express.json());
@@ -10,23 +11,52 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzeO3SaLOzbS7L7cqJJf
 app.post('/', async (req, res) => {
   const data = req.body;
 
-  console.log("🔥 UPDATE:", JSON.stringify(data));
+  if (!data.message) {
+    return res.sendStatus(200);
+  }
 
-  try {
-    if (data.message) {
-      const chatId = data.message.chat.id;
+  const chatId = data.message.chat.id;
 
-      await sendText(chatId, "✅ Bot is alive");
+  // 1. /start
+  if (data.message.text === "/start") {
+    await sendMessage(chatId, "👋 Welcome!\nSend voice to register.");
+    return res.sendStatus(200);
+  }
+
+  // 2. VOICE
+  if (data.message.voice) {
+    const fileId = data.message.voice.file_id;
+
+    // TEMP STORE (simple)
+    userState[chatId] = {
+      step: "WAIT_PHONE",
+      voice: fileId
+    };
+
+    await sendMessage(chatId, "📱 Please send your phone number.");
+    return res.sendStatus(200);
+  }
+
+  // 3. CONTACT
+  if (data.message.contact) {
+    const phone = data.message.contact.phone_number;
+
+    if (userState[chatId] && userState[chatId].step === "WAIT_PHONE") {
+
+      const voice = userState[chatId].voice;
+
+      console.log("SAVE WORKER:", {
+        chatId,
+        phone,
+        voice
+      });
+
+      await sendMessage(chatId, "✅ Registered successfully!");
+
+      userState[chatId] = null;
     }
 
-    if (data.callback_query) {
-      const chatId = data.callback_query.message.chat.id;
-
-      await sendText(chatId, "✅ Button clicked");
-    }
-
-  } catch (e) {
-    console.log("❌ ERROR:", e);
+    return res.sendStatus(200);
   }
 
   res.sendStatus(200);
@@ -38,6 +68,15 @@ app.get('/', (req, res) => {
 
 app.listen(10000, () => console.log("Running"));
 const BOT_TOKEN = process.env.BOT_TOKEN;
+
+async function sendMessage(chatId, text) {
+  const url = `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`;
+
+  await axios.post(url, {
+    chat_id: chatId,
+    text: text
+  });
+}
 
 async function sendText(chatId, text) {
   await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
